@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- CleanMyTV 图标：蓝色圆角底 + 白色电视轮廓 + 绿色对勾 -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <!-- 圆角方形背景 -->
+    <path
+        android:fillColor="#2F6BFF"
+        android:pathData="M28,4 L80,4 C93,4 104,15 104,28 L104,80 C104,93 93,104 80,104 L28,104 C15,104 4,93 4,80 L4,28 C4,15 15,4 28,4 Z" />
+
+    <!-- 电视屏幕 -->
+    <path
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="5"
+        android:strokeLineJoin="round"
+        android:pathData="M30,36 L78,36 L78,66 L30,66 Z" />
+
+    <!-- 电视底座 -->
+    <path
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="5"
+        android:strokeLineCap="round"
+        android:pathData="M46,76 L62,76" />
+
+    <!-- 对勾（清理完成） -->
+    <path
+        android:strokeColor="#7CE38B"
+        android:strokeWidth="7"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:pathData="M38,51 L47,60 L69,39" />
+</vector>
