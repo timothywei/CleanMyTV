@@ -11,17 +11,16 @@ import android.os.Handler;
 import android.os.IBinder;
 import android.os.Looper;
 import android.provider.Settings;
-import android.util.Log;
 
 /**
  * 前台服务：让音量监听在桌面退到后台后仍能工作（避免被系统冻结），
  * 从而在任何应用界面上都能弹出音量浮层。
  *
  * 只做一件事：注册 volume_* 的 ContentObserver，变化时让 VolumeHud 显示。
+ * 所有关键步骤都会写 DbgLog，方便重启后排查「服务有没有起来」。
  */
 public class VolumeService extends Service {
 
-    private static final String TAG = "CleanMyTV";
     private static final String CHANNEL_ID = "cleanyourtv_volume";
     private static final int NOTIF_ID = 1001;
 
@@ -31,20 +30,27 @@ public class VolumeService extends Service {
     @Override
     public void onCreate() {
         super.onCreate();
-        Log.d(TAG, "VolumeService onCreate");
+        DbgLog.d(this, "VolumeService onCreate (pid=" + android.os.Process.myPid() + ")");
 
         // 必须先 startForeground，否则 Android 8+ 会抛异常
         try {
             startForeground(NOTIF_ID, buildNotification());
+            DbgLog.d(this, "VolumeService startForeground ok");
         } catch (Throwable t) {
-            Log.d(TAG, "startForeground failed: " + t);
+            DbgLog.d(this, "VolumeService startForeground FAILED " + t);
         }
 
         try {
+            boolean canOverlay = false;
+            try {
+                canOverlay = Settings.canDrawOverlays(this);
+            } catch (Throwable ignored) { }
+            DbgLog.d(this, "VolumeService canDrawOverlays=" + canOverlay);
+
             hud = new VolumeHud(this, null);
-            Log.d(TAG, "VolumeService hud overlay=" + hud.isOverlayMode());
+            DbgLog.d(this, "VolumeService hud created, overlayMode=" + hud.isOverlayMode());
         } catch (Throwable t) {
-            Log.d(TAG, "hud init failed: " + t);
+            DbgLog.d(this, "VolumeService hud init FAILED " + t);
         }
 
         try {
@@ -59,27 +65,29 @@ public class VolumeService extends Service {
                     "volume_music_speaker", "volume_music_hdmi"}) {
                 cr.registerContentObserver(Settings.System.getUriFor(k), false, observer);
             }
-            Log.d(TAG, "VolumeService observer registered");
+            DbgLog.d(this, "VolumeService observer registered");
         } catch (Throwable t) {
-            Log.d(TAG, "observer register failed: " + t);
+            DbgLog.d(this, "VolumeService observer register FAILED " + t);
         }
     }
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
+        DbgLog.d(this, "VolumeService onStartCommand startId=" + startId
+                + " from=" + (intent == null ? "null" : "intent"));
         return START_STICKY;
     }
 
     @Override
     public void onDestroy() {
         super.onDestroy();
+        DbgLog.d(this, "VolumeService onDestroy");
         try {
             if (observer != null) getContentResolver().unregisterContentObserver(observer);
         } catch (Throwable ignored) { }
         try {
             if (hud != null) hud.destroy();
         } catch (Throwable ignored) { }
-        Log.d(TAG, "VolumeService onDestroy");
     }
 
     @Override

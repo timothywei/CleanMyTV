@@ -84,15 +84,15 @@ public class VolumeHud {
                     wm.addView(panel, overlayParams());
                     overlayAdded = true;
                     overlayMode = true;
-                    Log.d(TAG, "VolumeHud: overlay mode OK");
+                    DbgLog.d(ctx, "VolumeHud: overlay mode OK");
                 }
             } catch (Throwable t) {
-                Log.d(TAG, "VolumeHud: overlay failed -> fallback, " + t);
+                DbgLog.d(ctx, "VolumeHud: overlay failed -> fallback, " + t);
                 overlayMode = false;
                 overlayAdded = false;
             }
         } else {
-            Log.d(TAG, "VolumeHud: no overlay permission -> activity mode");
+            DbgLog.d(ctx, "VolumeHud: no overlay permission -> activity mode");
         }
 
         // 回退：放进 Activity 容器（container 为 null 表示由 Service 使用，只支持悬浮窗）
@@ -103,7 +103,7 @@ public class VolumeHud {
                     container.addView(panel, containerParams());
                 } catch (Throwable ignored) { }
             } else {
-                Log.d(TAG, "VolumeHud: no overlay permission and no container -> disabled");
+                DbgLog.d(ctx, "VolumeHud: no overlay permission and no container -> disabled");
             }
         }
     }

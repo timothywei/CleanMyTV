@@ -409,11 +409,7 @@ public class HomeActivity extends Activity {
         setContentView(container);
 
         // 音量监听交给前台服务：桌面退到后台（打开其他应用）时也能弹 HUD
-        try {
-            Intent svc = new Intent(this, VolumeService.class);
-            if (android.os.Build.VERSION.SDK_INT >= 26) startForegroundService(svc);
-            else startService(svc);
-        } catch (Throwable ignored) { }
+        ensureVolumeService("onCreate");
 
         try {
             applyWallpaper();
@@ -510,6 +506,8 @@ public class HomeActivity extends Activity {
     @Override
     protected void onResume() {
         super.onResume();
+        // 兜底：开机那次可能失败，用户一操作桌面就重试（startForegroundService 幂等）
+        ensureVolumeService("onResume");
         handler.postDelayed(ticker, 1000);
 
         refreshApps();
@@ -532,6 +530,18 @@ public class HomeActivity extends Activity {
         focusTarget = target;
         grid.postDelayed(focusGridTask, 300);
         grid.postDelayed(focusGridTask, 1200);
+    }
+
+    /** 确保音量前台服务在运行。onCreate / onResume 都会调用（幂等，不会重启服务）。 */
+    private void ensureVolumeService(String from) {
+        try {
+            Intent svc = new Intent(this, VolumeService.class);
+            if (android.os.Build.VERSION.SDK_INT >= 26) startForegroundService(svc);
+            else startService(svc);
+            DbgLog.d(this, "HomeActivity." + from + ": startForegroundService ok");
+        } catch (Throwable t) {
+            DbgLog.d(this, "HomeActivity." + from + ": startForegroundService FAILED " + t);
+        }
     }
 
     @Override
