@@ -2,6 +2,10 @@
 
 **中文** | [English](README.en.md)
 
+[![Build](https://github.com/timothywei/CleanMyTV/actions/workflows/build.yml/badge.svg)](https://github.com/timothywei/CleanMyTV/actions/workflows/build.yml)
+[![Release](https://img.shields.io/github/v/release/timothywei/CleanMyTV)](https://github.com/timothywei/CleanMyTV/releases)
+[![License](https://img.shields.io/github/license/timothywei/CleanMyTV)](LICENSE)
+
 一个为**小米电视（MiTV-MFFU0 / finch，HyperOS TV 4）**自研的极简桌面，用来替换广告缠身的 PatchWall。
 
 纯命令行构建、零第三方依赖、APK 仅 40 KB。核心目标是：**开机即桌面，首页干净，没有推荐卡片。**

@@ -2,6 +2,10 @@
 
 **English** | [中文](README.md)
 
+[![Build](https://github.com/timothywei/CleanMyTV/actions/workflows/build.yml/badge.svg)](https://github.com/timothywei/CleanMyTV/actions/workflows/build.yml)
+[![Release](https://img.shields.io/github/v/release/timothywei/CleanMyTV)](https://github.com/timothywei/CleanMyTV/releases)
+[![License](https://img.shields.io/github/license/timothywei/CleanMyTV)](LICENSE)
+
 A minimal Android TV launcher built for the **Xiaomi TV (MiTV-MFFU0 / `finch`, HyperOS TV 4)**, made to replace the ad-laden PatchWall.
 
 Zero third-party dependencies, built entirely from the command line, **40 KB APK**. The goal: **boot straight into a clean home screen with no promoted content.**
