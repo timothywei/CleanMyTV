@@ -103,6 +103,9 @@ public class HomeActivity extends Activity {
     private long ignoreCenterUntil = 0;
     private static final String TAG = "CleanMyTV";
 
+    /** 壁纸跨天检查间隔：桌面常驻不重建时，靠它发现日期变化并换图 */
+    private static final long WALLPAPER_CHECK_MS = 30 * 60 * 1000L;
+
     /** 焦点恢复参数（供固定 Runnable 使用，避免每次 onResume 产生新对象累积） */
     private boolean focusCold = true;
     private int focusTarget = 0;
@@ -133,6 +136,14 @@ public class HomeActivity extends Activity {
         @Override public void run() {
             updateClock();
             handler.postDelayed(this, 20000);
+        }
+    };
+
+    /** 壁纸检查：应用本地图 + 按需拉当天 Bing 图，跑完 30 分钟后再来一次 */
+    private final Runnable wallpaperTask = new Runnable() {
+        @Override public void run() {
+            try { refreshWallpaper(); } catch (Throwable ignored) { }
+            handler.postDelayed(this, WALLPAPER_CHECK_MS);
         }
     };
 
@@ -430,12 +441,8 @@ public class HomeActivity extends Activity {
         ensureLocalHud();
 
         try {
+            // 先铺本地缓存图，联网更新交给 onResume 的 wallpaperTask（避免两处并发下载）
             applyWallpaper();
-            BingWallpaper.updateIfNeeded(this, new Runnable() {
-                @Override public void run() {
-                    try { applyWallpaper(); } catch (Throwable ignored) { }
-                }
-            });
         } catch (Throwable ignored) {
             // 壁纸模块整体兜底：即使它出任何问题，桌面照常可用
         }
@@ -527,6 +534,10 @@ public class HomeActivity extends Activity {
         // 兜底：开机那次可能失败，用户一操作桌面就重试（startForegroundService 幂等）
         ensureVolumeService("onResume");
         handler.postDelayed(ticker, 1000);
+
+        // 壁纸：立即检查一次，之后每 30 分钟再查（跨天自动换图）
+        handler.removeCallbacks(wallpaperTask);
+        handler.post(wallpaperTask);
 
         refreshApps();
         handler.postDelayed(refreshTask, 800);
@@ -624,6 +635,7 @@ public class HomeActivity extends Activity {
         super.onPause();
         handler.removeCallbacks(ticker);
         handler.removeCallbacks(refreshTask);          // 清掉 3 个延迟刷新，避免后台空转
+        handler.removeCallbacks(wallpaperTask);        // 壁纸定时检查随桌面退到后台一起停
         try { grid.removeCallbacks(focusGridTask); } catch (Throwable ignored) { }
         try { unregisterReceiver(pkgReceiver); } catch (Exception ignored) { }
         // 音量监听不在这里注销：悬浮窗模式下，其他应用界面也要显示 HUD
@@ -632,6 +644,8 @@ public class HomeActivity extends Activity {
     @Override
     protected void onDestroy() {
         super.onDestroy();
+        // 兜底清掉所有延迟任务（正常路径 onPause 已逐个移除）
+        try { handler.removeCallbacksAndMessages(null); } catch (Throwable ignored) { }
         // 桌面内 HUD 属于本 Activity，必须随它一起释放
         releaseLocalHud();
         // VolumeService 是 START_STICKY 常驻服务，这里不停止它
@@ -808,6 +822,19 @@ public class HomeActivity extends Activity {
     /** 加载壁纸背景（委托给 Wallpaper，内部已做全部异常兜底）。 */
     private void applyWallpaper() {
         Wallpaper.apply(this, container);
+    }
+
+    /**
+     * 应用本地壁纸，并检查/下载当天的 Bing 图。
+     * updateIfNeeded 内部按「今天是否已成功」做幂等，重复调用不会重复下载。
+     */
+    private void refreshWallpaper() {
+        applyWallpaper();
+        BingWallpaper.updateIfNeeded(this, new Runnable() {
+            @Override public void run() {
+                try { applyWallpaper(); } catch (Throwable ignored) { }
+            }
+        });
     }
 
     private LinearLayout.LayoutParams lp() {

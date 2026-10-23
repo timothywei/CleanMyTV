@@ -16,8 +16,8 @@ import android.widget.TextView;
  * 这里给文字轮廓再描一圈半透明黑边线来保证可读性。
  *
  * 实现要点：TextView.onDraw 会把 paint 颜色强制同步成文字色，
- * 因此不能通过改 paint 颜色来画描边；这里在正常填充完成之后，
- * 把同一个 paint 临时切成 STROKE 再走一遍 Layout.draw，最后恢复现场。
+ * 因此不能先改 paint 颜色再由 super.onDraw 绘制；这里先用 STROKE + 描边色
+ * 自己走一遍 Layout.draw 画描边，再交给 super.onDraw 画填充，最后恢复 paint 现场。
  */
 public class OutlinedTextView extends TextView {
 
@@ -82,12 +82,16 @@ public class OutlinedTextView extends TextView {
         }
     }
 
-    /** 文本在可用高度内的垂直偏移，与 TextView 自身的 gravity 规则保持一致。 */
+    /** 文本在可用高度内的垂直偏移，规则与 TextView 自身保持一致。 */
     private int vOffset(Layout layout) {
         int avail = getHeight() - getCompoundPaddingTop() - getCompoundPaddingBottom();
+        int textHeight = layout.getHeight();
+        // 文字比可用高度还高时 TextView 不做垂直对齐（从顶部画），这里也要一致，
+        // 否则会算出负偏移，描边整体跑到字的上面去
+        if (textHeight >= avail) return 0;
         int gravity = getGravity() & Gravity.VERTICAL_GRAVITY_MASK;
-        if (gravity == Gravity.BOTTOM) return avail - layout.getHeight();
-        if (gravity == Gravity.CENTER_VERTICAL) return (avail - layout.getHeight()) / 2;
+        if (gravity == Gravity.BOTTOM) return avail - textHeight;
+        if (gravity == Gravity.CENTER_VERTICAL) return (avail - textHeight) / 2;
         return 0;
     }
 }
