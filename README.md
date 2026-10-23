@@ -12,6 +12,16 @@
 
 ---
 
+## 下载
+
+**[⬇ CleanMyTV.apk](https://github.com/timothywei/CleanMyTV/releases/latest/download/CleanMyTV.apk)** · 40.7 KB · 适用于 MiTV-MFFU0 / HyperOS TV 4
+
+[查看所有版本与更新说明](https://github.com/timothywei/CleanMyTV/releases) · 安装步骤见下方[「安装」](#安装)
+
+> 不熟悉 ADB 的话，请把上面的「安装」一节完整读完再动手——顺序错会装不上，或者装上却仍进 PatchWall。
+
+---
+
 ## 为什么做
 
 小米电视的 PatchWall 桌面在「我的应用」页顶部固定渲染三个推广卡片（剧集广告、应用下载引导、热播榜）。实测排查下来：
