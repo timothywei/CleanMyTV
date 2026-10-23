@@ -242,7 +242,7 @@ About 2,100 lines of Java, 40.7 KB APK.
 |---|---|
 | **ADB turns itself off on every reboot** | A Xiaomi TV behavior; you have to re-enable it on the TV before reconnecting |
 | **CEC volume is not wired up** | With an external JBL Cinema 715 over ARC, the TV volume affects the soundbar, but the soundbar's own volume cannot be read or synchronized; third-party apps have no `HDMI_CEC` permission |
-| **Overlay permission** | Must be granted manually, and again after a factory reset |
+| **Overlay permission** | Must be granted manually, and again after a factory reset. **Without it the volume HUD only appears on the home screen**, not over other apps (it does not crash) |
 | **Signing key** | `debug.jks` must be kept, otherwise new APKs cannot be installed over the old one (uninstall + reinstall, which breaks the Home setting) |
 | **A self-built APK ≠ the official APK** | An APK you build after forking is signed with your own key and **cannot be installed over** the official Releases APK; switching requires uninstalling first (which invalidates the Home setting, so the install steps must be repeated) |
 | **The package name cannot change** | `com.ts.launcher` is what makes Home work; changing it drops you back to PatchWall |

@@ -85,6 +85,9 @@ public class HomeActivity extends Activity {
     private TextView allAppsBtn;
     private LinearLayout root;
     private FrameLayout container;
+    /** 无悬浮窗权限时，在桌面 Activity 内挂的音量 HUD（与 Service 的悬浮窗互斥，不会同时存在） */
+    private VolumeHud localHud;
+    private ContentObserver volumeObserver;
     /** 上次焦点位置：仅当 Activity 存活时保留（从应用返回可恢复） */
     private int lastSelected = 0;
     /** 冷启动时跳到最常用应用；之后一律走 lastSelected */
@@ -411,6 +414,10 @@ public class HomeActivity extends Activity {
         // 音量监听交给前台服务：桌面退到后台（打开其他应用）时也能弹 HUD
         ensureVolumeService("onCreate");
 
+        // 没有悬浮窗权限时，Service 那边的 HUD 会处于 disabled，
+        // 这里补一个只在桌面内显示的 HUD，避免「按了音量但什么都看不到」
+        ensureLocalHud();
+
         try {
             applyWallpaper();
             BingWallpaper.updateIfNeeded(this, new Runnable() {
@@ -544,6 +551,63 @@ public class HomeActivity extends Activity {
         }
     }
 
+    /**
+     * 没有 SYSTEM_ALERT_WINDOW 权限时，在桌面 Activity 内挂一个音量 HUD。
+     *
+     * 必须与 Service 里的悬浮窗二选一：悬浮窗会覆盖整个屏幕，如果两边都创建，
+     * 桌面上会同时出现两个 HUD 叠在一起。
+     */
+    private void ensureLocalHud() {
+        try {
+            boolean hasOverlay;
+            try {
+                hasOverlay = android.os.Build.VERSION.SDK_INT >= 23 && Settings.canDrawOverlays(this);
+            } catch (Throwable t) {
+                // API 23 以下没有 canDrawOverlays，按「无权限」处理，走桌面内显示
+                hasOverlay = false;
+            }
+            if (hasOverlay) {
+                DbgLog.d(this, "HomeActivity: overlay permission present -> HUD owned by service");
+                return;
+            }
+            if (localHud != null) return;
+
+            localHud = new VolumeHud(this, container);
+            DbgLog.d(this, "HomeActivity: no overlay permission -> local HUD inside activity");
+
+            volumeObserver = new ContentObserver(new Handler(Looper.getMainLooper())) {
+                @Override public void onChange(boolean selfChange) {
+                    try { if (localHud != null) localHud.show(); } catch (Throwable ignored) { }
+                }
+            };
+            ContentResolver cr = getContentResolver();
+            for (String k : new String[]{
+                    "volume_music_hdmi_arc", "volume_music",
+                    "volume_music_speaker", "volume_music_hdmi"}) {
+                cr.registerContentObserver(Settings.System.getUriFor(k), false, volumeObserver);
+            }
+            DbgLog.d(this, "HomeActivity: local volume observer registered");
+        } catch (Throwable t) {
+            DbgLog.d(this, "HomeActivity: local HUD init FAILED " + t);
+        }
+    }
+
+    /** 释放桌面内 HUD：注销音量监听并把 View 从容器上摘掉，避免泄漏。 */
+    private void releaseLocalHud() {
+        try {
+            if (volumeObserver != null) {
+                getContentResolver().unregisterContentObserver(volumeObserver);
+                volumeObserver = null;
+            }
+        } catch (Throwable ignored) { }
+        try {
+            if (localHud != null) {
+                localHud.destroy();
+                localHud = null;
+            }
+        } catch (Throwable ignored) { }
+    }
+
     @Override
     protected void onPause() {
         super.onPause();
@@ -557,6 +621,8 @@ public class HomeActivity extends Activity {
     @Override
     protected void onDestroy() {
         super.onDestroy();
+        // 桌面内 HUD 属于本 Activity，必须随它一起释放
+        releaseLocalHud();
         // VolumeService 是 START_STICKY 常驻服务，这里不停止它
     }
 
