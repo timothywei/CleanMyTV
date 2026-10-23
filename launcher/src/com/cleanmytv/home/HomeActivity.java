@@ -71,6 +71,10 @@ public class HomeActivity extends Activity {
     static final int CARD     = 0x33FFFFFF;   // 半透明白（约 20%）
     static final int DIVIDER  = 0x1FFFFFFF;   // 很淡的分隔线（约 12% 白）
     static final int ACCENT   = 0xFF2F6BFF;
+    /** 文字描边：约 25% 黑，壁纸不压暗时给白字一点托底 */
+    static final int OUTLINE  = 0x40000000;
+    /** 首页卡片/胶囊底色：半透明黑（约 35%），壁纸原色下才立得住；选中态仍用 ACCENT */
+    static final int HOME_CARD = 0x59000000;
 
     static final String PREFS = "cleanyourtv_home";
     static final String KEY_REMOVED = "home_removed";
@@ -320,14 +324,21 @@ public class HomeActivity extends Activity {
         header.setOrientation(LinearLayout.HORIZONTAL);
         header.setGravity(Gravity.CENTER_VERTICAL);
 
-        clockView = new TextView(this);
-        clockView.setTextColor(TEXT);
-        clockView.setTextSize(32);
+        OutlinedTextView clock = new OutlinedTextView(this);
+        clock.setTextColor(TEXT);
+        clock.setTextSize(32);
+        clock.setStroke(OUTLINE, 2f);
+        clockView = clock;
         header.addView(clockView, lp());
 
-        dateView = new TextView(this);
-        dateView.setTextColor(TEXT_DIM);
-        dateView.setTextSize(15);
+        OutlinedTextView date = new OutlinedTextView(this);
+        date.setTextColor(TEXT);
+        date.setTextSize(15);
+        date.setStroke(OUTLINE, 1.5f);
+        // 大字号与小字号的行高在 CENTER_VERTICAL 下居中对齐后，
+        // 小字的字形中心会偏高约 1.5dp（实测 1080p 上 3px），这里补回来
+        date.setTranslationY(1.5f * getResources().getDisplayMetrics().density);
+        dateView = date;
         LinearLayout.LayoutParams dlp = lp();
         dlp.leftMargin = dp(18);
         header.addView(dateView, dlp);
@@ -827,7 +838,7 @@ public class HomeActivity extends Activity {
         pressed.setColor(ACCENT);
         pressed.setCornerRadius(dp(18));
         GradientDrawable normal = new GradientDrawable();
-        normal.setColor(0x33FFFFFF);   // 半透明白，与卡片一致
+        normal.setColor(HOME_CARD);    // 半透明黑，与首页卡片一致
         normal.setCornerRadius(dp(18));
         GradientDrawable foc = new GradientDrawable();
         foc.setColor(ACCENT);          // 聚焦：与列表选中色一致
@@ -849,7 +860,7 @@ public class HomeActivity extends Activity {
         sel.setColor(ACCENT);
         sel.setCornerRadius(dp(14));
         GradientDrawable normal = new GradientDrawable();
-        normal.setColor(CARD);
+        normal.setColor(HOME_CARD);
         normal.setCornerRadius(dp(14));
         sd.addState(new int[]{android.R.attr.state_selected}, sel);
         sd.addState(new int[]{android.R.attr.state_focused}, sel);
