@@ -20,10 +20,21 @@ import java.io.File;
  */
 public class Wallpaper {
 
+    /** 壁纸平均亮度回调：桌面据此决定卡片/胶囊用浅色还是深色玻璃 */
+    public interface LumaListener {
+        /** @param luma 0-255，-1 表示取不到 */
+        void onLuma(int luma);
+    }
+
     private static Bitmap sCachedBitmap;
     private static long sCachedStamp = -1L;
+    private static int sCachedLuma = -1;
 
     public static void apply(Context ctx, View target) {
+        apply(ctx, target, null);
+    }
+
+    public static void apply(Context ctx, View target, LumaListener listener) {
         if (ctx == null || target == null) return;
         try {
             File f = BingWallpaper.file(ctx);
@@ -36,11 +47,47 @@ public class Wallpaper {
                 if (crop == null) return;
                 sCachedBitmap = crop;
                 sCachedStamp = stamp;
+                sCachedLuma = averageLuma(crop);   // 每张图只算一次，随缓存复用
             }
 
             target.setBackground(new BitmapDrawable(ctx.getResources(), crop));
+            if (listener != null && sCachedLuma >= 0) listener.onLuma(sCachedLuma);
         } catch (Throwable ignored) {
             // 保持默认背景
+        }
+    }
+
+    /**
+     * 采样计算平均亮度（每 8 像素取一个点），够用来区分明暗壁纸。
+     *
+     * 只统计下部 40%：卡片、图标、文字全压在屏幕底部那一条带上，
+     * 上半部再亮再暗都不影响它们的可见性，算进来反而会把平均值带偏。
+     */
+    static int averageLuma(Bitmap b) {
+        try {
+            int w = b.getWidth();
+            int h = b.getHeight();
+            if (w <= 0 || h <= 0) return -1;
+
+            final int step = 8;
+            int y0 = (int) (h * 0.6f);
+            if (y0 >= h) y0 = 0;   // 图太小时退回全图，避免一个点都不采
+
+            long sum = 0;
+            long n = 0;
+            for (int y = y0; y < h; y += step) {
+                for (int x = 0; x < w; x += step) {
+                    int c = b.getPixel(x, y);
+                    int r = (c >> 16) & 0xFF;
+                    int g = (c >> 8) & 0xFF;
+                    int bl = c & 0xFF;
+                    sum += (299L * r + 587L * g + 114L * bl) / 1000L;
+                    n++;
+                }
+            }
+            return n == 0 ? -1 : (int) (sum / n);
+        } catch (Throwable t) {
+            return -1;
         }
     }
 

@@ -73,8 +73,12 @@ public class HomeActivity extends Activity {
     static final int ACCENT   = 0xFF2F6BFF;
     /** 文字描边：约 25% 黑，壁纸不压暗时给白字一点托底 */
     static final int OUTLINE  = 0x40000000;
-    /** 首页卡片/胶囊底色：半透明黑（约 35%），壁纸原色下才立得住；选中态仍用 ACCENT */
+    /** 首页卡片/胶囊底色：半透明黑（约 35%），亮壁纸下用 */
     static final int HOME_CARD = 0x59000000;
+    /** 壁纸偏暗时改用的浅色玻璃底（约 24% 白），否则深色卡片会直接隐形 */
+    static final int HOME_CARD_ON_DARK = 0x3DFFFFFF;
+    /** 壁纸平均亮度低于该值即视为"暗壁纸" */
+    static final int LUMA_DARK = 110;
 
     static final String PREFS = "cleanyourtv_home";
     static final String KEY_REMOVED = "home_removed";
@@ -109,6 +113,9 @@ public class HomeActivity extends Activity {
     /** 焦点恢复参数（供固定 Runnable 使用，避免每次 onResume 产生新对象累积） */
     private boolean focusCold = true;
     private int focusTarget = 0;
+
+    /** 卡片/胶囊当前底色，随壁纸平均亮度在深/浅玻璃之间切换 */
+    private int cardColor = HOME_CARD;
 
     private final Runnable refreshTask = new Runnable() {
         @Override public void run() {
@@ -819,9 +826,34 @@ public class HomeActivity extends Activity {
         dateView.setText(new SimpleDateFormat("M月d日 EEEE", Locale.CHINA).format(now));
     }
 
-    /** 加载壁纸背景（委托给 Wallpaper，内部已做全部异常兜底）。 */
+    /** 加载壁纸背景（委托给 Wallpaper，内部已做全部异常兜底），并按明暗切卡片底色。 */
     private void applyWallpaper() {
-        Wallpaper.apply(this, container);
+        Wallpaper.apply(this, container, new Wallpaper.LumaListener() {
+            @Override public void onLuma(int luma) {
+                updateCardColor(luma);
+            }
+        });
+    }
+
+    /**
+     * 按壁纸平均亮度选择卡片底色：
+     * 亮壁纸用深色玻璃，暗壁纸用浅色玻璃——否则卡片会和背景糊在一起看不见。
+     */
+    private void updateCardColor(int luma) {
+        if (luma < 0) return;
+        int next = luma < LUMA_DARK ? HOME_CARD_ON_DARK : HOME_CARD;
+        if (next == cardColor) return;
+        cardColor = next;
+        try {
+            if (adapter != null) {
+                // 换色需要重绘卡片，但不要把用户当前选中的位置冲掉
+                int sel = grid != null ? grid.getSelectedItemPosition() : -1;
+                adapter.notifyDataSetChanged();
+                if (sel >= 0) grid.setSelection(sel);
+            }
+            if (allAppsBtn != null) allAppsBtn.setBackground(pillBg());
+            DbgLog.d(this, "HomeActivity: card tint switched, luma=" + luma);
+        } catch (Throwable ignored) { }
     }
 
     /**
@@ -859,13 +891,18 @@ public class HomeActivity extends Activity {
         tv.setPadding(dp(20), dp(9), dp(20), dp(9));
         tv.setFocusable(true);
         tv.setClickable(true);
+        tv.setBackground(pillBg());
+        return tv;
+    }
 
+    /** 胶囊背景：底色跟随壁纸明暗（cardColor），选中/按下仍是强调色。 */
+    private Drawable pillBg() {
         StateListDrawable sd = new StateListDrawable();
         GradientDrawable pressed = new GradientDrawable();
         pressed.setColor(ACCENT);
         pressed.setCornerRadius(dp(18));
         GradientDrawable normal = new GradientDrawable();
-        normal.setColor(HOME_CARD);    // 半透明黑，与首页卡片一致
+        normal.setColor(cardColor);
         normal.setCornerRadius(dp(18));
         GradientDrawable foc = new GradientDrawable();
         foc.setColor(ACCENT);          // 聚焦：与列表选中色一致
@@ -873,8 +910,7 @@ public class HomeActivity extends Activity {
         sd.addState(new int[]{android.R.attr.state_focused}, foc);
         sd.addState(new int[]{android.R.attr.state_pressed}, pressed);
         sd.addState(new int[]{}, normal);
-        tv.setBackground(sd);
-        return tv;
+        return sd;
     }
 
     int dp(int v) {
@@ -887,7 +923,7 @@ public class HomeActivity extends Activity {
         sel.setColor(ACCENT);
         sel.setCornerRadius(dp(14));
         GradientDrawable normal = new GradientDrawable();
-        normal.setColor(HOME_CARD);
+        normal.setColor(cardColor);
         normal.setCornerRadius(dp(14));
         sd.addState(new int[]{android.R.attr.state_selected}, sel);
         sd.addState(new int[]{android.R.attr.state_focused}, sel);
