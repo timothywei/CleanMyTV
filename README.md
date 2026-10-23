@@ -1,5 +1,7 @@
 # CleanMyTV
 
+**中文** | [English](README.en.md)
+
 一个为**小米电视（MiTV-MFFU0 / finch，HyperOS TV 4）**自研的极简桌面，用来替换广告缠身的 PatchWall。
 
 纯命令行构建、零第三方依赖、APK 仅 40 KB。核心目标是：**开机即桌面，首页干净，没有推荐卡片。**
@@ -58,6 +60,8 @@
 
 顺序存于 SharedPreferences，重启保留；新装应用追加到末尾。
 
+![排序模式](docs/reorder.jpg)
+
 ### 所有应用
 
 - 6 列网格，显示全部可启动应用
@@ -67,11 +71,15 @@
 - **编辑：关/开** —— 编辑模式下确定键 = 加入/移出首页
 - 实时显示「首页已显示 N 个图标」
 
+![所有应用](docs/all-apps.jpg)
+
 ### 音量 HUD
 
 - 调音量时顶部居中弹出 `音量 22 / 100 (22%)` + 进度条，2.5 秒自动隐藏
 - 通过**前台服务 + 悬浮窗**实现，**在任意应用界面上都能显示**
 - 数字跟随当前输出设备（扬声器 / HDMI / ARC）
+
+![音量 HUD](docs/volume-hud.jpg)
 
 ### 其他
 
@@ -192,11 +200,15 @@ adb shell settings put global transition_animation_scale 1.0
 
 ```
 .
-├── README.md
+├── README.md / README.en.md        中文 / English
 ├── LICENSE                          MIT
 ├── .gitignore / .gitattributes
+├── .github/                         Issue 模板、PR 模板、CI
 ├── docs/
-│   └── home.jpg                     首页效果图
+│   ├── home.jpg                     首页
+│   ├── all-apps.jpg                 所有应用
+│   ├── reorder.jpg                  排序模式
+│   └── volume-hud.jpg               音量 HUD
 └── launcher/
     ├── build.ps1                    构建脚本（自动探测 build-tools）
     ├── AndroidManifest.xml          普通包名版
