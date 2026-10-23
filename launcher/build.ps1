@@ -1,4 +1,4 @@
-﻿# CleanMyTV Home launcher - 纯命令行构建（aapt2 + javac + d8 + zipalign + apksigner）
+# CleanMyTV Home launcher - 纯命令行构建（aapt2 + javac + d8 + zipalign + apksigner）
 #
 # 用法:
 #   $env:CMTV_KS_PASS = "你的密钥库口令"     # 或改用 -KsPass 参数传入
@@ -47,11 +47,14 @@ if (-not (Test-Path $AndroidJar)) {
 }
 Write-Host "   android.jar: $AndroidJar"
 
-$aapt2     = Join-Path $BT "aapt2.exe"
-$aapt      = Join-Path $BT "aapt.exe"
-$d8        = Join-Path $BT "d8.bat"
-$zipalign  = Join-Path $BT "zipalign.exe"
-$apksigner = Join-Path $BT "apksigner.bat"
+# Windows 上是 aapt2.exe / d8.bat；Linux·macOS 上是 aapt2 / d8（CI 的 Linux runner 会用到）
+$isWin     = ($env:OS -eq 'Windows_NT')
+$exeSuffix = if ($isWin) { ".exe" } else { "" }
+$aapt2     = Join-Path $BT "aapt2$exeSuffix"
+$aapt      = Join-Path $BT "aapt$exeSuffix"
+$d8        = Join-Path $BT $(if ($isWin) { "d8.bat" } else { "d8" })
+$zipalign  = Join-Path $BT "zipalign$exeSuffix"
+$apksigner = Join-Path $BT $(if ($isWin) { "apksigner.bat" } else { "apksigner" })
 
 foreach ($t in @($aapt2, $aapt, $d8, $zipalign, $apksigner, $AndroidJar)) {
     if (-not (Test-Path $t)) { throw "缺少: $t（请确认 build-tools 与 platforms 已完整安装）" }
@@ -110,7 +113,7 @@ Write-Host "== 6. 把 dex 塞进 APK =="
 Copy-Item (Join-Path $Build "base.apk") (Join-Path $Build "work.apk") -Force
 Push-Location (Join-Path $Build "dex")
 try {
-    & $aapt add $Build\work.apk classes.dex
+    & $aapt add (Join-Path $Build "work.apk") classes.dex
     if ($LASTEXITCODE -ne 0) { throw "aapt add 失败" }
 } finally { Pop-Location }
 

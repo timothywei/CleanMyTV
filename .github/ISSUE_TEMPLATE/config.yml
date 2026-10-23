@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 装不上 / 进不去桌面 / 想恢复 PatchWall
+    url: https://github.com/timothywei/CleanMyTV#安装
+    about: README 的「安装」与「回滚到原桌面」两节覆盖了绝大多数安装类问题，建议先读。
+  - name: 讨论与提问（不确定是不是 bug）
+    url: https://github.com/timothywei/CleanMyTV/discussions
+    about: 不确定是 bug 还是用法问题时，可以到 Discussions 聊。

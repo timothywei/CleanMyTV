@@ -1,0 +1,46 @@
+name: 功能建议
+description: 希望桌面增加或改变什么？
+title: "[Feature] "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        请重点说明**使用场景**——在什么情况下、做什么操作时觉得别扭，
+        比单纯描述「想要 XX 功能」更容易被采纳。
+
+        本项目刻意保持极简（零依赖、40 KB），因此「加一个大功能」的提议会优先考虑体积与稳定性成本。
+
+  - type: textarea
+    id: scenario
+    attributes:
+      label: 使用场景
+      description: 你在什么情况下需要它？现在只能怎么做，哪里不顺手？
+      placeholder: 例如：我家有两个 HDMI 信号源，每天要手动切来切去……
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: 你的想法
+      description: 你设想的交互方式和结果
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: 其他替代方案
+      description: 有没有别的实现思路？或者你已经试过哪些办法？
+    validations:
+      required: false
+
+  - type: input
+    id: device
+    attributes:
+      label: 电视型号 / 系统版本（可选）
+      description: 如果这个建议与具体机型相关，请填写
+      placeholder: 例如 MiTV_MFFU0 / OS4.0.11
+    validations:
+      required: false
