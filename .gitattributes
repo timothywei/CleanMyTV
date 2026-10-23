@@ -1,0 +1,21 @@
+# 仓库内统一 LF，避免在 Linux/macOS/WSL 构建时出现 \r 导致的诡异错误
+* text=auto eol=lf
+
+# PowerShell 脚本与 Windows 批处理保持 CRLF（Windows PowerShell 5.1 对 LF 的 .ps1 兼容性较差）
+*.ps1 text eol=crlf
+*.bat text eol=crlf
+*.cmd text eol=crlf
+
+# 二进制文件：不做换行转换，不做文本 diff
+*.png  binary
+*.jpg  binary
+*.jpeg binary
+*.webp binary
+*.gif  binary
+*.apk  binary
+*.idsig binary
+*.dex  binary
+*.jar  binary
+*.zip  binary
+*.jks  binary
+*.keystore binary

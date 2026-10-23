@@ -2,7 +2,11 @@
 
 一个为**小米电视（MiTV-MFFU0 / finch，HyperOS TV 4）**自研的极简桌面，用来替换广告缠身的 PatchWall。
 
-纯命令行构建、零第三方依赖、APK 仅 36 KB。核心目标是：**开机即桌面，首页干净，没有推荐卡片。**
+纯命令行构建、零第三方依赖、APK 仅 40 KB。核心目标是：**开机即桌面，首页干净，没有推荐卡片。**
+
+> ⚠️ **风险提示**：本方案需要开启 ADB、禁用系统桌面（`com.mitv.tvhome`）并把第三方应用设为 Home。
+> 这已经越过了厂商的默认配置边界，**请先确认你能接受「电视可能进不去桌面、需要通过 ADB 恢复」的后果再动手**。
+> 本项目仅供个人学习与技术研究，作者不对任何设备故障负责。文中命令已在本机（MiTV-MFFU0 / HyperOS TV 4.0.11）实测，不保证在你的机型上同样有效。
 
 ![CleanMyTV 首页](docs/home.jpg)
 
@@ -99,9 +103,15 @@ aapt2 compile → aapt2 link → javac → d8 → aapt add → zipalign → apks
 
 ## 构建
 
-需要：JDK 17、Android SDK（build-tools 35.0.0、platforms android-34）。
+需要：**JDK 17**、**Android SDK**（已安装任意版本的 `build-tools` 与 `platforms`，脚本会自动选取最新版），并设置环境变量 `ANDROID_HOME`。
+
+签名口令通过环境变量传入，不写在脚本里：
 
 ```powershell
+# 1. 设置签名口令（自己定一个，务必记住）
+$env:CMTV_KS_PASS = "你的密钥库口令"
+
+# 2. 构建
 cd launcher
 
 # 普通包名版（调试用，无法成为 Home）
@@ -112,6 +122,11 @@ cd launcher
 ```
 
 产物：`launcher/CleanMyTV.apk`
+
+首次构建时若 `launcher/debug.jks` 不存在，脚本会用该口令自动生成一个新的密钥库。
+
+> 🔑 **签名密钥是唯一身份**：`debug.jks` 一旦丢失或更换，新构建的 APK **无法覆盖安装**已装版本，只能先卸载——
+> 而卸载会让 Home 设置失效，需要重新走一遍 `set-home-activity`。请务必备份 `debug.jks`，且不要提交到公开仓库。
 
 ---
 
@@ -168,27 +183,34 @@ adb shell settings put global transition_animation_scale 1.0
 ```
 .
 ├── README.md
-├── *.png                            效果截图
+├── LICENSE                          MIT
+├── .gitignore / .gitattributes
+├── docs/
+│   └── home.jpg                     首页效果图
 └── launcher/
-    ├── CleanMyTV.apk                成品
-    ├── debug.jks                    签名密钥 ★
-    ├── build.ps1                    构建脚本
+    ├── build.ps1                    构建脚本（自动探测 build-tools）
     ├── AndroidManifest.xml          普通包名版
     ├── AndroidManifest-ts.xml       白名单版（com.ts.launcher）
     ├── res/
     │   ├── anim/                    转场动画（4 个）
     │   └── drawable/ic_launcher.xml 矢量应用图标
-    └── src/com/cleanmytv/home/
-        ├── HomeActivity.java        首页（时钟/壁纸/网格/移动模式）
-        ├── AllAppsActivity.java     所有应用（过滤/编辑/清空）
-        ├── IconFactory.java         图标统一化（带缓存）
-        ├── Wallpaper.java           Bing 壁纸加载（带 Bitmap 缓存）
-        ├── BingWallpaper.java       每日壁纸下载（每天限一次）
-        ├── VolumeHud.java           音量浮层（悬浮窗 / Activity 双模式）
-        └── VolumeService.java       前台服务（保活音量监听）
+    ├── src/com/cleanmytv/home/
+    │   ├── HomeActivity.java        首页（时钟/壁纸/网格/移动模式）
+    │   ├── AllAppsActivity.java     所有应用（过滤/编辑/清空）
+    │   ├── IconFactory.java         图标统一化（带缓存）
+    │   ├── Wallpaper.java           Bing 壁纸加载（带 Bitmap 缓存）
+    │   ├── BingWallpaper.java       每日壁纸下载（每天限一次）
+    │   ├── VolumeHud.java           音量浮层（悬浮窗 / Activity 双模式）
+    │   ├── VolumeService.java       前台服务（保活音量监听）
+    │   ├── BootReceiver.java        开机自启（拉起音量服务）
+    │   └── DbgLog.java              调试日志
+    │
+    ├── debug.jks                    签名密钥 ★ 本地生成，不入库
+    ├── build/                       构建中间产物，不入库
+    └── CleanMyTV.apk                成品，不入库（请从 Releases 下载）
 ```
 
-约 1730 行 Java，1 个 APK 36.7 KB。
+约 2100 行 Java，APK 40.7 KB。
 
 ---
 
@@ -200,6 +222,7 @@ adb shell settings put global transition_animation_scale 1.0
 | **CEC 音量未打通** | 外接 JBL Cinema 715（ARC）时，电视音量对音响有效，但无法读取/同步音响自身音量；第三方 App 无 `HDMI_CEC` 权限 |
 | **悬浮窗权限** | 需要手动授权，恢复出厂后需重设 |
 | **签名密钥** | `debug.jks` 必须保留，否则新 APK 无法覆盖安装（只能卸载重装，会导致 Home 失效） |
+| **自行构建 ≠ 官方 APK** | 你 fork 后构建的 APK 用你自己的密钥签名，与 Releases 里的官方 APK 签名不同，**无法互相覆盖安装**，切换时需先卸载（Home 设置随之失效，需重跑一遍安装步骤） |
 | **包名不能改** | `com.ts.launcher` 是 Home 生效的关键，改了会退回 PatchWall |
 
 ---
@@ -214,6 +237,24 @@ adb shell input keyevent KEYCODE_HOME
 
 ---
 
+## 免责声明
+
+本项目为个人自用工具，按「现状」提供，不附带任何明示或暗示的担保。
+
+- 修改默认 Home、禁用系统应用属于越界操作，**可能导致电视无法正常进入桌面**，请确保你能通过 ADB 恢复（`pm enable com.mitv.tvhome` + 重设 Home）后再操作。
+- 项目仅在 **MiTV-MFFU0 / HyperOS TV 4.0.11** 上验证，其他机型/系统版本的行为未经测试。
+- 因使用本项目导致的设备故障、数据丢失或保修失效，作者不承担责任。
+
+---
+
 ## 参考
 
 项目思路与机型资料参考了 [CleanYourTV](https://github.com/Gathin23/cleanyourtv) 的公开文档（小米白名单机制、`com.ts.launcher` 后门、输入源切换等）。
+
+---
+
+## 许可证
+
+[MIT](LICENSE) © 2026 timothywei
+
+你可以自由使用、修改、分发本项目，包括商业用途，只需保留版权声明与许可证文本。
